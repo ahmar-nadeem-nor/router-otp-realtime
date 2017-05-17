@@ -32,4 +32,5 @@ public interface Constants {
     public static final String POINT_SUFFIX = ")";
     public static final int POINT_SUFFIX_LEN = POINT_SUFFIX.length();
     public static final String POINT_SEPARATOR = " ";
+	public static final String FEED_TYPE_ASCII = "ASCII";
 }

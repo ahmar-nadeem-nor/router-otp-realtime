@@ -16,15 +16,18 @@ package org.opentripplanner.updater.stoptime;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import com.fasterxml.jackson.databind.JsonNode;
 
 import org.opentripplanner.routing.graph.Graph;
 import org.opentripplanner.updater.JsonConfigurable;
+import org.opentripplanner.util.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.protobuf.TextFormat;
 import com.google.transit.realtime.GtfsRealtime;
 import com.google.transit.realtime.GtfsRealtime.FeedEntity;
 import com.google.transit.realtime.GtfsRealtime.FeedMessage;
@@ -47,11 +50,17 @@ public class GtfsRealtimeFileTripUpdateSource implements TripUpdateSource, JsonC
      * Default agency id that is used for the trip ids in the TripUpdates
      */
     private String feedId;
+    
+    /**
+     * An optional filed used for ASCII input
+     */
+    private String feedType;
 
     @Override
     public void configure(Graph graph, JsonNode config) throws Exception {
         this.feedId = config.path("feedId").asText();
         this.file = new File(config.path("file").asText(""));
+        this.feedType = config.path("feedType").asText("");
     }
 
     @Override
@@ -64,7 +73,15 @@ public class GtfsRealtimeFileTripUpdateSource implements TripUpdateSource, JsonC
             InputStream is = new FileInputStream(file);
             if (is != null) {
                 // Decode message
-                feedMessage = FeedMessage.PARSER.parseFrom(is);
+            	if( this.feedType.equalsIgnoreCase(Constants.FEED_TYPE_ASCII)){
+            		InputStreamReader reader = new InputStreamReader(is, Constants.FEED_TYPE_ASCII);
+            		FeedMessage.Builder builder = FeedMessage.newBuilder();
+            		TextFormat.merge(reader, builder);
+            		feedMessage = builder.build();
+            	}
+            	else{
+            		feedMessage = FeedMessage.PARSER.parseFrom(is);
+                }
                 feedEntityList = feedMessage.getEntityList();
                 
                 // Change fullDataset value if this is an incremental update
